@@ -17,3 +17,9 @@ python -m pysc2.bin.agent \
 --agent_race T \
 --max_agent_steps 0 \
 --norender
+
+### P.S.
+    The smart_agent.py is not designed for our game, but a full game agent.
+    Thus it does not learn much by running on  our map. This is just a demo of 
+    how to run a "SmartAgent" on our map. All we will have to do is to modify
+    the smart_agent.py to make it a better fit to our game.
