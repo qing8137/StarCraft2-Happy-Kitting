@@ -137,9 +137,7 @@ class SmartAgent(base_agent.BaseAgent):
 
         player_y, player_x = (obs.observation['minimap'][_PLAYER_RELATIVE] == _PLAYER_SELF).nonzero()
         enemy_y, enemy_x = (obs.observation['minimap'][_PLAYER_RELATIVE] == _PLAYER_HOSTILE).nonzero()
-        print("enemy_y = ")
-        print(enemy_y)
-        print("\n")
+
         self.base_top_left = 1 if player_y.any() and player_y.mean() <= 31 else 0
 
         # unit_type = obs.observation['screen'][_UNIT_TYPE]
@@ -164,9 +162,6 @@ class SmartAgent(base_agent.BaseAgent):
             army_health_score
         ]
         
-        print("data ::")
-        print(current_state)
-        print("\n")
 
  
 
