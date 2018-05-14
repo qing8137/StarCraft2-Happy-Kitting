@@ -1,5 +1,6 @@
 import random
 import math
+
 import os
 
 import numpy as np
@@ -82,8 +83,8 @@ smart_actions = [
     #ACTION_SELECT_ARMY_2,
     #ACTION_SELECT_ARMY_3,
     ACTION_SELECT_UNIT_1,
-    ACTION_SELECT_UNIT_2,
-    ACTION_SELECT_UNIT_3
+    # ACTION_SELECT_UNIT_2,
+    # ACTION_SELECT_UNIT_3
 ]
 
 KILL_UNIT_REWARD = 100
@@ -92,7 +93,7 @@ LOSS_UNIT_REWARD = -0.5
 
 # Stolen from https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow
 class QLearningTable:
-    def __init__(self, actions, learning_rate=0.5, reward_decay=0.9, e_greedy=0.9):
+    def __init__(self, actions, learning_rate=0.01, reward_decay=0.9, e_greedy=0.9):
         self.actions = actions  # a list
         self.lr = learning_rate
         self.gamma = reward_decay
@@ -147,7 +148,6 @@ class QLearningTable:
         if state not in self.q_table.index:
             # append new state to q table
             self.q_table = self.q_table.append(pd.Series([0] * len(self.actions), index=self.q_table.columns, name=state))
-
 class SmartAgent(base_agent.BaseAgent):
     def __init__(self):
         super(SmartAgent, self).__init__()
@@ -175,7 +175,10 @@ class SmartAgent(base_agent.BaseAgent):
 
         player_y, player_x = (obs.observation['minimap'][_PLAYER_RELATIVE] == _PLAYER_SELF).nonzero()
         enemy_y, enemy_x = (obs.observation['minimap'][_PLAYER_RELATIVE] == _PLAYER_HOSTILE).nonzero()
-        self.base_top_left = 1 if player_y.any() and player_y.mean() <= 31 else 0
+
+        print("plyer coord = ", player_y, player_x)
+        print("enemy coord = ", enemy_y, enemy_x)
+
 
         # unit_type = obs.observation['screen'][_UNIT_TYPE]
         units_count = obs.observation['multi_select'].shape[0]
@@ -188,9 +191,11 @@ class SmartAgent(base_agent.BaseAgent):
             hp.append(obs.observation['multi_select'][i][2])
 
         army_health_score = sum(hp)
+        print("army_health_score = ", army_health_score)
 
         killed_unit_score = obs.observation['score_cumulative'][5]
-        lost_hp_score = (45*3 - sum(hp))/(45*3)
+        lost_hp_score = (45.0*3.0 - sum(hp))/(45.0*3.0)
+        print("lost_hp_score  = ", lost_hp_score)
         current_state = [
             enemy_y,
             enemy_x,
@@ -207,13 +212,14 @@ class SmartAgent(base_agent.BaseAgent):
         # self.print_data(unit_hit_points_ratio)
 
         if self.previous_action is not None:
-            reward = 0
+            reward = 0.0
 
             if killed_unit_score > self.previous_killed_unit_score:
                 reward += KILL_UNIT_REWARD
 
             if lost_hp_score > self.previous_lost_hp_score:
                 reward -= lost_hp_score
+            print(reward)
 
             self.qlearn.learn(str(self.previous_state), self.previous_action, reward, str(current_state))
             # print(self.reward, self.steps)
@@ -222,7 +228,6 @@ class SmartAgent(base_agent.BaseAgent):
         rl_action = self.qlearn.choose_action(str(current_state))
         smart_action = smart_actions[rl_action]
 
-        self.qlearn.q_table.to_pickle(DATA_FILE + '.gz', 'gzip')
         
         self.previous_killed_unit_score = killed_unit_score
         self.previous_lost_hp_score = lost_hp_score
@@ -246,17 +251,17 @@ class SmartAgent(base_agent.BaseAgent):
                     #print(1)
                     return actions.FunctionCall(_SELECT_UNIT, [_NOT_QUEUED, [0]])
 
-        elif action == ACTION_SELECT_UNIT_2:
-            if _SELECT_UNIT in obs.observation['available_actions']:
-                if len(xloc) >= 2 and len(yloc) >= 2:
-                    #print(2)
-                    return actions.FunctionCall(_SELECT_UNIT, [_NOT_QUEUED, [1]])
+        # elif action == ACTION_SELECT_UNIT_2:
+        #     if _SELECT_UNIT in obs.observation['available_actions']:
+        #         if len(xloc) >= 2 and len(yloc) >= 2:
+        #             #print(2)
+        #             return actions.FunctionCall(_SELECT_UNIT, [_NOT_QUEUED, [1]])
 
-        elif action == ACTION_SELECT_UNIT_3:
-            if _SELECT_UNIT in obs.observation['available_actions']:
-                if len(xloc) >= 3 and len(yloc) >= 3:
-                    #print(3)
-                    return actions.FunctionCall(_SELECT_UNIT, [_NOT_QUEUED, [2]])
+        # elif action == ACTION_SELECT_UNIT_3:
+        #     if _SELECT_UNIT in obs.observation['available_actions']:
+        #         if len(xloc) >= 3 and len(yloc) >= 3:
+        #             #print(3)
+        #             return actions.FunctionCall(_SELECT_UNIT, [_NOT_QUEUED, [2]])
 
         elif action == ACTION_ATTACK_UP:
             if _ATTACK_MINIMAP in obs.observation["available_actions"]:
