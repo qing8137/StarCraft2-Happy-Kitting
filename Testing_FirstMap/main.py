@@ -43,7 +43,7 @@ flags.DEFINE_string("map", 'HK2V1', "Name of a map to use.")
 
 
 flags.DEFINE_bool("render", True, "Whether to render with pygame.")
-flags.DEFINE_integer("screen_resolution", 84,
+flags.DEFINE_integer("screen_resolution", 86,
                      "Resolution for screen feature layers.")
 flags.DEFINE_integer("minimap_resolution", 64,
                      "Resolution for minimap feature layers.")
@@ -53,10 +53,8 @@ flags.DEFINE_integer("max_agent_steps", 100000, "Total agent steps.")
 flags.DEFINE_integer("game_steps_per_episode", 0, "Game steps per episode.")
 flags.DEFINE_integer("step_mul", 8, "Game steps per agent step.")
 
-flags.DEFINE_enum("agent_race", None, sc2_env.races.keys(), "Agent's race.")
-flags.DEFINE_enum("bot_race", None, sc2_env.races.keys(), "Bot's race.")
-flags.DEFINE_enum("difficulty", None, sc2_env.difficulties.keys(),
-                  "Bot's strength.")
+
+
 
 flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
 flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
@@ -70,13 +68,10 @@ flags.mark_flag_as_required("map")
 def run_thread(agent_cls, map_name, visualize):
   with sc2_env.SC2Env(
       map_name=map_name,
-      agent_race=FLAGS.agent_race,
-      bot_race=FLAGS.bot_race,
-      difficulty=FLAGS.difficulty,
       step_mul=FLAGS.step_mul,
       game_steps_per_episode=FLAGS.game_steps_per_episode,
-      screen_size_px=(FLAGS.screen_resolution, FLAGS.screen_resolution),
-      minimap_size_px=(FLAGS.minimap_resolution, FLAGS.minimap_resolution),
+      feature_screen_size= 84,
+      feature_minimap_size= 64,
       visualize=visualize) as env:
     env = available_actions_printer.AvailableActionsPrinter(env)
     agent = agent_cls()
@@ -111,7 +106,7 @@ def _main(unused_argv):
     threads.append(t)
     t.start()
 
-  run_thread(agent_cls, FLAGS.map, FLAGS.render)
+  run_thread(agent_cls, FLAGS.map, FLAGS.render)  
 
   for t in threads:
     t.join()

@@ -3,7 +3,9 @@ import math
 
 import os
 import sc2
-from sc2 import unit
+from sc2.constants import *
+from sc2.unit import Unit
+from sc2.player import Bot
 
 
 import numpy as np
@@ -126,7 +128,7 @@ class QLearningTable:
         return action
 
     def learn(self, s, a, r, s_):
-                if s == s_:
+        if s == s_:
             return
         
         self.check_state_exist(s_)
@@ -152,7 +154,7 @@ class QLearningTable:
         if state not in self.q_table.index:
             # append new state to q table
             self.q_table = self.q_table.append(pd.Series([0] * len(self.actions), index=self.q_table.columns, name=state))
-            print(self.q_table.index)
+            #print(self.q_table.index)
 class SmartAgent(base_agent.BaseAgent):
     def __init__(self):
         super(SmartAgent, self).__init__()
@@ -209,7 +211,7 @@ class SmartAgent(base_agent.BaseAgent):
             # army_health_score
         ]
         
-
+        print(Units(ZEALOT).health())
  
 
 
