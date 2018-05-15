@@ -2,6 +2,9 @@ import random
 import math
 
 import os
+import sc2
+from sc2 import unit
+
 
 import numpy as np
 import pandas as pd
@@ -17,6 +20,7 @@ _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _SELECT_UNIT = actions.FUNCTIONS.select_unit.id
 _ATTACK_MINIMAP = actions.FUNCTIONS.Attack_minimap.id
 _MOVE_SCREEN = actions.FUNCTIONS.Move_screen.id
+_MOVE_MINIMAP = actions.FUNCTIONS.Move_minimap.id
 
 _PLAYER_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _UNIT_TYPE = features.SCREEN_FEATURES.unit_type.index
@@ -75,20 +79,20 @@ smart_actions = [
     ACTION_MOVE_DOWN,
     ACTION_MOVE_LEFT,
     ACTION_MOVE_RIGHT,
-    ACTION_MOVE_UP_LEFT,
-    ACTION_MOVE_UP_RIGHT,
-    ACTION_MOVE_DOWN_LEFT,
-    ACTION_MOVE_DOWN_RIGHT,
-    #ACTION_SELECT_ARMY_1,
+    # ACTION_MOVE_UP_LEFT,
+    # ACTION_MOVE_UP_RIGHT,
+    # ACTION_MOVE_DOWN_LEFT,
+    # ACTION_MOVE_DOWN_RIGHT,
+    ACTION_SELECT_ARMY_1,
     #ACTION_SELECT_ARMY_2,
     #ACTION_SELECT_ARMY_3,
-    ACTION_SELECT_UNIT_1,
-    # ACTION_SELECT_UNIT_2,
+    #ACTION_SELECT_UNIT_1,
+    #ACTION_SELECT_UNIT_2,
     # ACTION_SELECT_UNIT_3
 ]
 
 KILL_UNIT_REWARD = 100
-LOSS_UNIT_REWARD = -0.5
+LOSS_UNIT_REWARD = 0.5
 
 
 # Stolen from https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow
@@ -122,7 +126,7 @@ class QLearningTable:
         return action
 
     def learn(self, s, a, r, s_):
-        if s == s_:
+                if s == s_:
             return
         
         self.check_state_exist(s_)
@@ -148,6 +152,7 @@ class QLearningTable:
         if state not in self.q_table.index:
             # append new state to q table
             self.q_table = self.q_table.append(pd.Series([0] * len(self.actions), index=self.q_table.columns, name=state))
+            print(self.q_table.index)
 class SmartAgent(base_agent.BaseAgent):
     def __init__(self):
         super(SmartAgent, self).__init__()
@@ -159,8 +164,8 @@ class SmartAgent(base_agent.BaseAgent):
 
         self.previous_action = None
         self.previous_state = None
-        if os.path.isfile(DATA_FILE + '.gz'):
-            self.qlearn.q_table = pd.read_pickle(DATA_FILE + '.gz', compression='gzip')
+        # if os.path.isfile(DATA_FILE + '.gz'):
+        #     self.qlearn.q_table = pd.read_pickle(DATA_FILE + '.gz', compression='gzip')
 
     def transformLocation(self, x, x_distance, y, y_distance):
         if not self.base_top_left:
@@ -176,8 +181,8 @@ class SmartAgent(base_agent.BaseAgent):
         player_y, player_x = (obs.observation['minimap'][_PLAYER_RELATIVE] == _PLAYER_SELF).nonzero()
         enemy_y, enemy_x = (obs.observation['minimap'][_PLAYER_RELATIVE] == _PLAYER_HOSTILE).nonzero()
 
-        print("plyer coord = ", player_y, player_x)
-        print("enemy coord = ", enemy_y, enemy_x)
+        # print("plyer coord = ", player_y, player_x)
+        # print("enemy coord = ", enemy_y, enemy_x)
 
 
         # unit_type = obs.observation['screen'][_UNIT_TYPE]
@@ -191,17 +196,17 @@ class SmartAgent(base_agent.BaseAgent):
             hp.append(obs.observation['multi_select'][i][2])
 
         army_health_score = sum(hp)
-        print("army_health_score = ", army_health_score)
+        # print("army_health_score = ", army_health_score)
 
         killed_unit_score = obs.observation['score_cumulative'][5]
-        lost_hp_score = (45.0*3.0 - sum(hp))/(45.0*3.0)
-        print("lost_hp_score  = ", lost_hp_score)
+        lost_hp_score = (60.0*2.0 - sum(hp))/(60.0*2.0)
+        # print("lost_hp_score  = ", lost_hp_score)
         current_state = [
             enemy_y,
             enemy_x,
             player_y,
             player_x,
-            army_health_score
+            # army_health_score
         ]
         
 
@@ -219,11 +224,11 @@ class SmartAgent(base_agent.BaseAgent):
 
             if lost_hp_score > self.previous_lost_hp_score:
                 reward -= lost_hp_score
-            print(reward)
+            # print(reward)
 
             self.qlearn.learn(str(self.previous_state), self.previous_action, reward, str(current_state))
             # print(self.reward, self.steps)
-            self.qlearn.q_table.to_pickle(DATA_FILE + '.gz', 'gzip')
+            # self.qlearn.q_table.to_pickle(DATA_FILE + '.gz', 'gzip')
 
         rl_action = self.qlearn.choose_action(str(current_state))
         smart_action = smart_actions[rl_action]
@@ -251,17 +256,17 @@ class SmartAgent(base_agent.BaseAgent):
                     #print(1)
                     return actions.FunctionCall(_SELECT_UNIT, [_NOT_QUEUED, [0]])
 
-        # elif action == ACTION_SELECT_UNIT_2:
-        #     if _SELECT_UNIT in obs.observation['available_actions']:
-        #         if len(xloc) >= 2 and len(yloc) >= 2:
-        #             #print(2)
-        #             return actions.FunctionCall(_SELECT_UNIT, [_NOT_QUEUED, [1]])
+        elif action == ACTION_SELECT_UNIT_2:
+            if _SELECT_UNIT in obs.observation['available_actions']:
+                if len(xloc) >= 2 and len(yloc) >= 2:
+                    #print(2)
+                    return actions.FunctionCall(_SELECT_UNIT, [_NOT_QUEUED, [1]])
 
-        # elif action == ACTION_SELECT_UNIT_3:
-        #     if _SELECT_UNIT in obs.observation['available_actions']:
-        #         if len(xloc) >= 3 and len(yloc) >= 3:
-        #             #print(3)
-        #             return actions.FunctionCall(_SELECT_UNIT, [_NOT_QUEUED, [2]])
+        elif action == ACTION_SELECT_UNIT_3:
+            if _SELECT_UNIT in obs.observation['available_actions']:
+                if len(xloc) >= 3 and len(yloc) >= 3:
+                    #print(3)
+                    return actions.FunctionCall(_SELECT_UNIT, [_NOT_QUEUED, [2]])
 
         elif action == ACTION_ATTACK_UP:
             if _ATTACK_MINIMAP in obs.observation["available_actions"]:
@@ -281,35 +286,35 @@ class SmartAgent(base_agent.BaseAgent):
 
         elif action == ACTION_MOVE_UP:
             if _MOVE_SCREEN in obs.observation["available_actions"]:
-                return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [0, 83]])
+                return actions.FunctionCall(_MOVE_MINIMAP, [_NOT_QUEUED, [0, 36]])
 
         elif action == ACTION_MOVE_DOWN:
             if _MOVE_SCREEN in obs.observation["available_actions"]:
-                return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [83, 42]])
+                return actions.FunctionCall(_MOVE_MINIMAP, [_NOT_QUEUED, [60, 36]])
 
         elif action == ACTION_MOVE_LEFT:
             if _MOVE_SCREEN in obs.observation["available_actions"]:
-                return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [42, 0]])
+                return actions.FunctionCall(_MOVE_MINIMAP, [_NOT_QUEUED, [32, 0]])
 
         elif action == ACTION_MOVE_RIGHT:
             if _MOVE_SCREEN in obs.observation["available_actions"]:
-                return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [42, 83]])
+                return actions.FunctionCall(_MOVE_MINIMAP, [_NOT_QUEUED, [32, 60]])
 
         elif action == ACTION_MOVE_UP_LEFT:
             if _MOVE_SCREEN in obs.observation["available_actions"]:
-                return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [0, 0]])
+                return actions.FunctionCall(_MOVE_MINIMAP, [_NOT_QUEUED, [0, 0]])
 
         elif action == ACTION_MOVE_UP_RIGHT:
             if _MOVE_SCREEN in obs.observation["available_actions"]:
-                return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [0, 83]])
+                return actions.FunctionCall(_MOVE_MINIMAP, [_NOT_QUEUED, [0, 60]])
 
         elif action == ACTION_MOVE_DOWN_LEFT:
             if _MOVE_SCREEN in obs.observation["available_actions"]:
-                return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [83, 0]])
+                return actions.FunctionCall(_MOVE_MINIMAP, [_NOT_QUEUED, [60, 0]])
 
         elif action == ACTION_MOVE_DOWN_RIGHT:
             if _MOVE_SCREEN in obs.observation["available_actions"]:
-                return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [83, 83]])
+                return actions.FunctionCall(_MOVE_MINIMAP, [_NOT_QUEUED, [60, 60]])
 
         return actions.FunctionCall(_NO_OP, [])
 
