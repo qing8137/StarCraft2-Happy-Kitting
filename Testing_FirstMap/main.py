@@ -51,7 +51,7 @@ flags.DEFINE_integer("minimap_resolution", 64,
 # edit steps limit to control training episodes.
 flags.DEFINE_integer("max_agent_steps", 100000, "Total agent steps.")
 flags.DEFINE_integer("game_steps_per_episode", 0, "Game steps per episode.")
-flags.DEFINE_integer("step_mul", 8, "Game steps per agent step.")
+flags.DEFINE_integer("step_mul", 2, "Game steps per agent step.")
 
 
 
@@ -72,6 +72,7 @@ def run_thread(agent_cls, map_name, visualize):
       game_steps_per_episode=FLAGS.game_steps_per_episode,
       feature_screen_size= 84,
       feature_minimap_size= 64,
+      use_feature_units=True,
       visualize=visualize) as env:
     env = available_actions_printer.AvailableActionsPrinter(env)
     agent = agent_cls()
