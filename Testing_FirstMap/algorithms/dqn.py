@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Stolen from https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow
 class DeepQNetwork(object):
@@ -39,17 +40,15 @@ class DeepQNetwork(object):
         t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_net')
         e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='eval_net')
 
-
         with tf.variable_scope('soft_replacement'):
             self.target_replace_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
 
         self.sess = tf.Session()
 
-        if output_graph:
-            # $ tensorboard --logdir=logs
-            tf.summary.FileWriter("logs/", self.sess.graph)
-
+        self.merged_summary = tf.summary.merge_all()
+        #self.writer = tf.summary.FileWriter('logs', self.sess.graph)
         self.sess.run(tf.global_variables_initializer())
+
         self.saver = tf.train.Saver()
         self.cost_his = []
         self.reward = []
@@ -68,34 +67,77 @@ class DeepQNetwork(object):
 
         # ------------------ build evaluate_net ------------------
         with tf.variable_scope('eval_net'):
+            # hidden layer 1
             e_z1 = tf.layers.dense(self.s, 6, activation=None, kernel_initializer=w_initializer, bias_initializer=b_initializer, name='e1')
+            tf.summary.histogram('e_z1', e_z1)
+
             e_bn1 = tf.layers.batch_normalization(e_z1, training=True)
-            e_a1 = tf.nn.relu(e_bn1)
+            tf.summary.histogram('e_bn1', e_bn1)
+
+            e_a1 = tf.nn.tanh(e_bn1)
+            tf.summary.histogram('e_a1', e_a1)
+
+            # hidden layer 2
+            e_z2 = tf.layers.dense(e_a1, 6, activation=None, kernel_initializer=w_initializer,bias_initializer=b_initializer, name='e2')
+            tf.summary.histogram('e_z2', e_z2)
+
+            e_bn2 = tf.layers.batch_normalization(e_z2, training=True)
+            tf.summary.histogram('e_bn2', e_bn2)
+
+            e_a2 = tf.nn.tanh(e_bn2)
+            tf.summary.histogram('e_a2', e_a2)
+
             ### output layer
-            self.q_eval = tf.layers.dense(e_a1, self.n_actions, activation=tf.nn.relu, kernel_initializer=w_initializer,
+            self.q_eval = tf.layers.dense(e_a2, self.n_actions, activation=tf.nn.tanh, kernel_initializer=w_initializer,
                                           bias_initializer=b_initializer, name='q')
+            tf.summary.histogram('q_eval', self.q_eval)
+
 
         # ------------------ build target_net ------------------
 
         with tf.variable_scope('target_net'):
+            # hidden layer 1
             t_z1 = tf.layers.dense(self.s_, 6, activation=None, kernel_initializer=w_initializer, bias_initializer=b_initializer, name='t1')
+            tf.summary.histogram('t_z1', t_z1)
+
             t_bn1 = tf.layers.batch_normalization(t_z1, training=True)
-            t_a1 = tf.nn.relu(t_bn1)
+            tf.summary.histogram('t_bn1', t_bn1)
+
+            t_a1 = tf.nn.tanh(t_bn1)
+            tf.summary.histogram('t_a1', t_a1)
+
+            # hidden layer 2
+            t_z2 = tf.layers.dense(t_a1, 6, activation=None, kernel_initializer=w_initializer,
+                                   bias_initializer=b_initializer, name='t2')
+            tf.summary.histogram('t_z2', t_z2)
+
+            t_bn2 = tf.layers.batch_normalization(t_z2, training=True)
+            tf.summary.histogram('t_bn2', t_bn2)
+
+            t_a2 = tf.nn.tanh(t_bn2)
+            tf.summary.histogram('t_a2', t_a2)
+
             ### output layer
-            self.q_next = tf.layers.dense(t_a1, self.n_actions, activation=tf.nn.relu, kernel_initializer=w_initializer,
-                                          bias_initializer=b_initializer, name='t2')
+            self.q_next = tf.layers.dense(t_a2, self.n_actions, activation=tf.nn.tanh, kernel_initializer=w_initializer,
+                                          bias_initializer=b_initializer, name='t3')
+            tf.summary.histogram('q_next', self.q_next)
+
 
         with tf.variable_scope('q_target'):
             q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='Qmax_s_')    # shape=(None, )
             self.q_target = tf.stop_gradient(q_target)
+            # tf.summary.histogram('q_target', self.q_target)
         with tf.variable_scope('q_eval'):
             a_indices = tf.stack([tf.range(tf.shape(self.a)[0], dtype=tf.int32), self.a], axis=1)
             self.q_eval_wrt_a = tf.gather_nd(params=self.q_eval, indices=a_indices)    # shape=(None, )
+            # tf.summary.histogram('q_eval', self.q_eval_wrt_a)
         with tf.variable_scope('loss'):
             self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval_wrt_a, name='TD_error'))
+            tf.summary.scalar('loss', self.loss)
         with tf.variable_scope('train'):
             with tf.control_dependencies(update_ops):
                 self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
+
 
     def store_transition(self, s, a, r, s_):
         if not hasattr(self, 'memory_counter'):
@@ -135,8 +177,8 @@ class DeepQNetwork(object):
 
         batch_memory = self.memory[sample_index, :]
 
-        _, cost = self.sess.run(
-            [self._train_op, self.loss],
+        _, cost, summary = self.sess.run(
+            [self._train_op, self.loss, self.merged_summary],
             feed_dict={
                 self.s: batch_memory[:, :self.n_features],
                 self.a: batch_memory[:, self.n_features],
@@ -145,25 +187,27 @@ class DeepQNetwork(object):
             })
 
         self.cost_his.append(cost)
+        #self.writer.add_summary(summary, self.learn_step_counter)
+        #self.writer.flush()
 
         # increasing epsilon
         self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
         self.learn_step_counter += 1
 
-    def plot_reward(self, map, save):
+    def plot_reward(self, path, save):
         plt.plot(np.arange(len(self.reward)), self.reward)
         plt.ylabel('Reward')
         plt.xlabel('training steps')
         if save:
-            plt.savefig('pics/' + map + '/dqn' + '/reward.png')
+            plt.savefig(path + '/reward.png')
         plt.show()
 
-    def plot_cost(self, map, save):
+    def plot_cost(self, path, save):
         plt.plot(np.arange(len(self.cost_his)), self.cost_his)
         plt.ylabel('Cost')
         plt.xlabel('training steps')
         if save:
-            plt.savefig('pics/' + map + '/dqn' + '/cost.png')
+            plt.savefig(path + '/cost.png')
         plt.show()
 
     def save_model(self, path, count):
