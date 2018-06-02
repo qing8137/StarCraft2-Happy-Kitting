@@ -77,7 +77,7 @@ class SmartAgent(object):
             len(smart_actions),
             13, # one of the most important data that needs to be update # 17 or 7
             learning_rate=0.01,
-            reward_decay=0.9,
+            reward_decay=0.7,
             e_greedy=0.9,
             replace_target_iter=200,
             memory_size=50000,
@@ -88,6 +88,7 @@ class SmartAgent(object):
 
         # self defined vars
         self.fighting = False
+        self.seperat_steps = 0
         self.win = 0
         self.player_hp = []
         self.player_hp_list = []
@@ -102,26 +103,34 @@ class SmartAgent(object):
 
     def step(self, obs):
         # from the origin base.agent
-        self.steps += 1
-        self.reward += obs.reward
+
 
         #time.sleep(0.5)
         current_state, enemy_hp, player_hp, enemy_loc, player_loc, distance, selected, enemy_count, player_count = self.extract_features(obs)
 
-        if (self.steps % 100 == 0):
 
-            self.player_hp_list.append(sum(player_hp))
-            self.enemy_hp_list.append(sum(enemy_hp))
-
-
-        while not self.fighting:
+        while self.seperat_steps < 8:
             if selected[0] == 1 and selected[1] == 1:
                 return actions.FunctionCall(_SELECT_POINT, [_NOT_QUEUED, player_loc[0]])
+            self.seperat_steps = self.seperat_steps+1
+            return self.perform_action(obs, smart_actions[3] , player_loc, enemy_loc, selected)
+
+        while not self.fighting:
+            if selected[0] == 0 or selected[1] == 0:
+                return actions.FunctionCall(_SELECT_ARMY, [_NOT_QUEUED])
             for i in range(0, player_count):
                 if distance[i] < 20:
                     self.fighting = True
                     return actions.FunctionCall(_NO_OP, [])
             return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, enemy_loc[0]])
+
+        self.steps += 1
+        self.reward += obs.reward
+
+        if (self.steps % 100 == 0):
+
+            self.player_hp_list.append(sum(player_hp))
+            self.enemy_hp_list.append(sum(enemy_hp))
 
         if self.previous_action is not None:
             reward = self.get_reward(obs, distance, player_hp, enemy_hp, player_count, enemy_count)
@@ -166,8 +175,8 @@ class SmartAgent(object):
             if (i < 7):
                 reward -= 1
 
-        # if player_hp_sum < pri_player_hp_sum:
-        #     reward -= 1.5
+        if player_hp_sum < pri_player_hp_sum:
+            reward -= 1.5
         
         if enemy_hp_sum < pri_enemy_hp_sum: 
             reward += 1
@@ -392,5 +401,6 @@ class SmartAgent(object):
         # added instead of original
         self.fighting = False
         self.counter = 0
+        self.seperat_steps = 0
 
 

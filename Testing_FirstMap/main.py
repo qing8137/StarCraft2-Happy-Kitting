@@ -60,7 +60,7 @@ flags.DEFINE_integer("minimap_resolution", 64,
 # edit steps limit to control training episodes.
 flags.DEFINE_integer("max_agent_steps", 1000000, "Total agent steps.")
 flags.DEFINE_integer("game_steps_per_episode", 0, "Game steps per episode.")
-flags.DEFINE_integer("step_mul", 2, "Game steps per agent step.")
+flags.DEFINE_integer("step_mul", 5, "Game steps per agent step.")
 
 flags.DEFINE_bool("profile", False, "Whether to turn on code profiling.")
 flags.DEFINE_bool("trace", False, "Whether to trace the code execution.")
