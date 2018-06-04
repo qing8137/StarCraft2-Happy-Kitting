@@ -1,0 +1,5 @@
+
+*.pyc
+DQN/.DS_Store
+DQN/algorithms/.DS_Store
+DQN/logs/.DS_Store
