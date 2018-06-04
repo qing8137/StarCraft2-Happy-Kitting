@@ -43,6 +43,12 @@ MOVE_UP = 'moveup'
 MOVE_DOWN = 'movedown'
 MOVE_LEFT = 'moveleft'
 MOVE_RIGHT = 'moveright'
+
+MOVE_UP_LEFT = 'moveupleft'
+MOVE_UP_RIGHT = 'moveupright'
+MOVE_DOWN_LEFT = 'movedownleft'
+MOVE_DOWN_RIGHT = 'movedownright'
+
 ACTION_SELECT_UNIT_1 = 'selectunit1'
 ACTION_SELECT_UNIT_2 = 'selectunit2'
 ATTACK_TARGET = 'attacktarget'
@@ -54,6 +60,10 @@ smart_actions = [
     MOVE_DOWN,
     MOVE_LEFT,
     MOVE_RIGHT,
+    MOVE_UP_LEFT,
+    MOVE_UP_RIGHT,
+    MOVE_DOWN_LEFT,
+    MOVE_DOWN_RIGHT,
     ACTION_SELECT_UNIT_1,
     ACTION_SELECT_UNIT_2
 ]
@@ -75,7 +85,7 @@ class SmartAgent(object):
 
         self.dqn = DeepQNetwork(
             len(smart_actions), #7
-            10, # one of the most important data that needs to be update # 17 or 7
+            8, # one of the most important data that needs to be update # 17 or 7
             learning_rate=0.01,
             reward_decay=0.7,
             e_greedy=0.9,
@@ -113,7 +123,7 @@ class SmartAgent(object):
             if selected[0] == 1 and selected[1] == 1:
                 return actions.FunctionCall(_SELECT_POINT, [_NOT_QUEUED, player_loc[0]])
             self.seperat_steps = self.seperat_steps+1
-            return self.perform_action(obs, MOVE_DOWN , player_loc, enemy_loc, selected)
+            return self.perform_action(obs, MOVE_DOWN , player_loc, enemy_loc, selected, enemy_count )
 
         while not self.fighting:
             if selected[0] == 0 or selected[1] == 0:
@@ -146,15 +156,12 @@ class SmartAgent(object):
                 self.dqn.learn()
 
 
-
-
-
         self.previous_state = current_state
         self.previous_action = rl_action
         self.previous_enemy_hp = enemy_hp
         self.previous_player_hp = player_hp
 
-        return self.perform_action(obs, smart_action, player_loc, enemy_loc, selected)
+        return self.perform_action(obs, smart_action, player_loc, enemy_loc, selected, enemy_count)
 
     def get_reward(self, obs, distance, player_hp, enemy_hp, player_count, enemy_count, rl_action, selected, unit_locs, enemy_loc):
         reward = 0
@@ -180,24 +187,32 @@ class SmartAgent(object):
         x = unit_locs[index][0]
         y = unit_locs[index][1]
 
-        if (x < 10 and rl_action == smart_actions.index(MOVE_LEFT)):
+        if ((x < 5 and rl_action == smart_actions.index(MOVE_LEFT)) or\
+            (x < 5 and rl_action == smart_actions.index(MOVE_UP_LEFT)) or\
+            (x < 5 and rl_action == smart_actions.index(MOVE_DOWN_LEFT))):
             return -1
-        if (x > 74 and rl_action == smart_actions.index(MOVE_RIGHT)):
+        if ((x > 78 and rl_action == smart_actions.index(MOVE_RIGHT)) or\
+            (x > 78 and rl_action == smart_actions.index(MOVE_UP_RIGHT)) or\
+            (x > 78 and rl_action == smart_actions.index(MOVE_DOWN_RIGHT))):
             return -1
-        if (y < 10 and rl_action == smart_actions.index(MOVE_UP)):
+        if ((y < 5 and rl_action == smart_actions.index(MOVE_UP)) or \
+            (y < 5 and rl_action == smart_actions.index(MOVE_UP_RIGHT)) or\
+            (y < 5 and rl_action == smart_actions.index(MOVE_UP_LEFT))):
             return -1
-        if (y > 58 and rl_action == smart_actions.index(MOVE_DOWN)):
+        if ((y > 59 and rl_action == smart_actions.index(MOVE_DOWN)) or\
+            (y > 59 and rl_action == smart_actions.index(MOVE_DOWN_RIGHT)) or\
+            (y > 59 and rl_action == smart_actions.index(MOVE_DOWN_LEFT))):
             return -1
 
 
-        if (x < 15 and rl_action):
-            return -0.5
-        if (x > 70 and rl_action):
-            return -.5
-        if (y < 12 and rl_action):
-            return -.5
-        if (y > 54 and rl_action):
-            return -.5
+        # if (x < 15 and rl_action):
+        #     return -0.5
+        # if (x > 70 and rl_action):
+        #     return -.5
+        # if (y < 12 and rl_action):
+        #     return -.5
+        # if (y > 54 and rl_action):
+        #     return -.5
 
         pri_player_hp_sum = sum(self.previous_player_hp)
         pri_enemy_hp_sum = sum(self.previous_enemy_hp)
@@ -211,12 +226,12 @@ class SmartAgent(object):
         # print("player_hp = ", player_hp_sum)
         # print("enemy_hp = ", enemy_hp_sum)
 
-        # print("distance = ", distance)
+        print("distance = ", distance)
 
         all_keep_dist = 0
         for i in distance:
-            if (i < 35 and i > 10):
-                reward += 1
+            if (i > 31 or i < 18):
+                reward -= 1
 
         if enemy_hp_sum < pri_enemy_hp_sum:
             reward += 0.5
@@ -287,7 +302,7 @@ class SmartAgent(object):
         feature5 = np.array(min_distance).flatten() # distance
 
         # combine all features horizontally
-        current_state = np.hstack((feature3, feature4, feature5, is_selected))
+        current_state = np.hstack((feature3, feature4, is_selected))
 
         return current_state, feature1, feature2, enemy, player, min_distance, is_selected, enemy_unit_count, player_unit_count
 
@@ -306,7 +321,7 @@ class SmartAgent(object):
         return unit_locs[i], index
 
     #make the desired action calculated by DQN
-    def perform_action(self, obs, action, unit_locs, enemy_locs, selected):
+    def perform_action(self, obs, action, unit_locs, enemy_locs, selected, enemy_count):
 
         closest_coor, unit_index = self.closest_unit(unit_locs, enemy_locs)
         other_unit_index = 0
@@ -330,13 +345,13 @@ class SmartAgent(object):
 
         if action == ACTION_SELECT_UNIT_1:
             if _SELECT_POINT in obs.observation['available_actions']:
-                print("select closest")
-                return actions.FunctionCall(_SELECT_POINT, [_NOT_QUEUED, unit_locs[unit_index]])
+                    print("select closest")
+                    return actions.FunctionCall(_SELECT_POINT, [_NOT_QUEUED, unit_locs[unit_index]])
 
         elif action == ACTION_SELECT_UNIT_2:
             if _SELECT_POINT in obs.observation['available_actions']:
-                print("select farthest")
-                return actions.FunctionCall(_SELECT_POINT, [_NOT_QUEUED, unit_locs[other_unit_index]])
+                    print("select farthest")
+                    return actions.FunctionCall(_SELECT_POINT, [_NOT_QUEUED, unit_locs[other_unit_index]])
 
         #-----------------------
         elif action == ATTACK_TARGET:
@@ -350,15 +365,15 @@ class SmartAgent(object):
         elif action == MOVE_UP:
             if _MOVE_SCREEN in obs.observation["available_actions"] and index != -1:
                 x = x
-                y = y - 11
+                y = y - 5
 
-                if 6 > x:
-                    x = 6
+                if 8 > x:
+                    x = 8
                 elif x > 80:
                     x = 80
 
-                if 6 > y:
-                    y = 6
+                if 8 > y:
+                    y = 8
                 elif y > 60:
                     y = 60
                 print(action)
@@ -367,15 +382,15 @@ class SmartAgent(object):
         elif action == MOVE_DOWN:
             if _MOVE_SCREEN in obs.observation["available_actions"] and index != -1:
                 x = x
-                y = y + 11
+                y = y + 5
 
-                if 6 > x:
-                    x = 6
+                if 8 > x:
+                    x = 8
                 elif x > 80:
                     x = 80
 
-                if 6 > y:
-                    y = 6
+                if 8 > y:
+                    y = 8
                 elif y > 60:
                     y = 60
                 print(action)
@@ -383,16 +398,16 @@ class SmartAgent(object):
 
         elif action == MOVE_LEFT:
             if _MOVE_SCREEN in obs.observation["available_actions"] and index != -1:
-                x = x - 12
+                x = x - 5
                 y = y
 
-                if 6 > x:
-                    x = 6
+                if 8 > x:
+                    x = 8
                 elif x > 80:
                     x = 80
 
-                if 6 > y:
-                    y = 6
+                if 8 > y:
+                    y = 8
                 elif y > 60:
                     y = 60
                 print(action)
@@ -400,16 +415,78 @@ class SmartAgent(object):
 
         elif action == MOVE_RIGHT:
             if _MOVE_SCREEN in obs.observation["available_actions"] and index != -1:
-                x = x + 12
+                x = x + 5
                 y = y
 
-                if 6 > x:
-                    x = 6
+                if 8 > x:
+                    x = 8
                 elif x > 80:
                     x = 80
 
-                if 6 > y:
-                    y = 6
+                if 8 > y:
+                    y = 8
+                elif y > 60:
+                    y = 60
+                print(action)
+                return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [x, y]])
+
+        elif action == MOVE_UP_LEFT:
+                x = x - 5
+                y = y - 5
+
+                if 8 > x:
+                    x = 8
+                elif x > 80:
+                    x = 80
+
+                if 8 > y:
+                    y = 8
+                elif y > 60:
+                    y = 60
+                print(action)
+                return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [x, y]])
+        elif action == MOVE_UP_RIGHT:
+                x = x + 5
+                y = y - 5
+
+                if 8 > x:
+                    x = 8
+                elif x > 80:
+                    x = 80
+
+                if 8 > y:
+                    y = 8
+                elif y > 60:
+                    y = 60
+                print(action)
+                return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [x, y]])
+
+        elif action == MOVE_DOWN_LEFT:
+                x = x - 5
+                y = y + 5
+
+                if 8 > x:
+                    x = 8
+                elif x > 80:
+                    x = 80
+
+                if 8 > y:
+                    y = 8
+                elif y > 60:
+                    y = 60
+                print(action)
+                return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [x, y]])
+        elif action == MOVE_DOWN_RIGHT:
+                x = x + 5
+                y = y + 5
+
+                if 8 > x:
+                    x = 8
+                elif x > 80:
+                    x = 80
+
+                if 8 > y:
+                    y = 8
                 elif y > 60:
                     y = 60
                 print(action)
@@ -417,7 +494,7 @@ class SmartAgent(object):
 
         self.previous_action = 5
         print(action)
-        return actions.FunctionCall(_SELECT_POINT, [_NOT_QUEUED, unit_locs[0]])
+        return actions.FunctionCall(_NO_OP, [])
 
 
     def plot_player_hp(self, path, save):
@@ -448,5 +525,6 @@ class SmartAgent(object):
         self.fighting = False
         self.counter = 0
         self.seperat_steps = 0
+        self.previous_player_hp = []
 
 
