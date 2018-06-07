@@ -11,6 +11,7 @@ Tensorflow: r1.2
 
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 np.random.seed(1)
 tf.set_random_seed(1)
@@ -59,12 +60,15 @@ class DeepQNetwork:
 
         self.sess = tf.Session()
 
-        if output_graph:
-            # $ tensorboard --logdir=logs
-            tf.summary.FileWriter("logs/", self.sess.graph)
+        self.merged_summary = tf.summary.merge_all()
+        self.writer = tf.summary.FileWriter('logs', self.sess.graph)
+        self.sess.run(tf.global_variables_initializer())
 
+        self.saver = tf.train.Saver()
         self.sess.run(tf.global_variables_initializer())
         self.cost_his = []
+        self.reward = []
+        self.memory_counter = 0
 
     def _build_net(self):
         # ------------------ all inputs ------------------------
@@ -77,14 +81,14 @@ class DeepQNetwork:
 
         # ------------------ build evaluate_net ------------------
         with tf.variable_scope('eval_net'):
-            e1 = tf.layers.dense(self.s, 20, tf.nn.relu, kernel_initializer=w_initializer,
+            e1 = tf.layers.dense(self.s, 25, tf.nn.relu, kernel_initializer=w_initializer,
                                  bias_initializer=b_initializer, name='e1')
             self.q_eval = tf.layers.dense(e1, self.n_actions, kernel_initializer=w_initializer,
                                           bias_initializer=b_initializer, name='q')
 
         # ------------------ build target_net ------------------
         with tf.variable_scope('target_net'):
-            t1 = tf.layers.dense(self.s_, 20, tf.nn.relu, kernel_initializer=w_initializer,
+            t1 = tf.layers.dense(self.s_, 25, tf.nn.relu, kernel_initializer=w_initializer,
                                  bias_initializer=b_initializer, name='t1')
             self.q_next = tf.layers.dense(t1, self.n_actions, kernel_initializer=w_initializer,
                                           bias_initializer=b_initializer, name='t2')
@@ -104,6 +108,15 @@ class DeepQNetwork:
         if not hasattr(self, 'memory_counter'):
             self.memory_counter = 0
         transition = np.hstack((s, [a, r], s_))
+        # replace the old memory with new memory
+        index = self.memory_counter % self.memory_size
+        self.memory[index, :] = transition
+        self.memory_counter += 1
+
+        if self.learn_step_counter % 10 == 0:
+            self.reward.append(r)
+        # transform a and r into 1D array
+        transition = np.hstack((s, [a], [r], s_))
         # replace the old memory with new memory
         index = self.memory_counter % self.memory_size
         self.memory[index, :] = transition
@@ -149,12 +162,32 @@ class DeepQNetwork:
         self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
         self.learn_step_counter += 1
 
-    def plot_cost(self):
-        import matplotlib.pyplot as plt
+
+
+    def plot_reward(self, path, save):
+        if self.learn_step_counter % 10 == 0:
+            plt.plot(np.arange(len(self.reward)), self.reward)
+            plt.ylabel('Reward')
+            plt.xlabel('training steps')
+            if save:
+                plt.savefig(path + '/reward.png')
+            plt.show()
+
+    def plot_cost(self, path, save):
         plt.plot(np.arange(len(self.cost_his)), self.cost_his)
         plt.ylabel('Cost')
         plt.xlabel('training steps')
+        if save:
+            plt.savefig(path + '/cost.png')
         plt.show()
+
+    def save_model(self, path, count):
+        self.saver.save(self.sess, path + '/model.pkl', count)
+
+    def load_model(self, path):
+        ckpt = tf.train.get_checkpoint_state(path)
+        self.saver.restore(self.sess, ckpt.model_checkpoint_path)
+        return int(ckpt.model_checkpoint_path.split('-')[-1])
 
 if __name__ == '__main__':
     DQN = DeepQNetwork(3,4, output_graph=True)
