@@ -1,21 +1,29 @@
 # StarCraft2-Happy-Kitting
-StarCraft2 A.I. with DDPG
+StarCraft2 A.I. with DQN
 
+```
+Group Members
+Qing Lin,           
+Chu-Hung Cheng,         
+Yean Li,           
+Siyuan Yao,             
+Oi Lam Sou,           
+Nghiem Trong Van,       
+```
 
 #### main.py
-Instruction:
 
-Only two parts to edit:
 ```python
-# modify agent name here: "agent", "YourAgentFileName.YourAgentClassName", "Description"
-flags.DEFINE_string("agent", "test_agent.TestAgent",
-                    "Which agent to run")
+Map
+Player Units: 2 Reapers
+Enemy Unit: 1 Zealor
+Victory Condition: Eliminate the enemy
+Time Limit: 1 min 30 sec
+Modified from PySC2 mini games (DefeatRoaches)
 
-# edit map used here
-flags.DEFINE_string("map", "HappyKiting3V2", "Name of a map to use.")
 ```
 Run:
-`python agent.py`
+`python3 main.py` in `~\DQN`
 without any commandline parameters
 
 [![DQN Demo](https://img.youtube.com/vi/Gx3hAEql9gA/0.jpg)](https://www.youtube.com/watch?v=Gx3hAEql9gA "DQN Demo")
