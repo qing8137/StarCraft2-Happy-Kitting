@@ -26,5 +26,7 @@ Run:
 `python3 main.py` in `~\DQN`
 without any commandline parameters
 
-`click to play the demo`
+
+`click to watch the demo`
+
 [![DQN Demo](https://img.youtube.com/vi/EH-jz9o_wDg/0.jpg)](https://www.youtube.com/watch?v=EH-jz9o_wDg "DQN Demo")
