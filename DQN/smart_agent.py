@@ -85,7 +85,7 @@ class SmartAgent(object):
 
         self.dqn = DeepQNetwork(
             len(smart_actions), #7
-            7, # one of the most important data that needs to be update # 17 or 7
+            8, # one of the most important data that needs to be update # 17 or 7
             learning_rate=0.01,
             reward_decay=0.7,
             e_greedy=0.9,
@@ -129,7 +129,7 @@ class SmartAgent(object):
             if selected[0] == 0 or selected[1] == 0:
                 return actions.FunctionCall(_SELECT_ARMY, [_NOT_QUEUED])
             for i in range(0, player_count):
-                if distance[i] < 20:
+                if distance[i] < 13:
                     self.fighting = True
                     return actions.FunctionCall(_NO_OP, [])
             return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, enemy_loc[0]])
@@ -156,7 +156,7 @@ class SmartAgent(object):
             if (self.steps > 50):
                 self.dqn.learn()
             if (self.steps % 10 == 0):
-                self.reward_list.append(self.reward)
+                self.reward_list.append(reward)
 
 
         self.previous_state = current_state
@@ -206,22 +206,14 @@ class SmartAgent(object):
         #     return -1.5
 
 
-        # if ((x < 10 and rl_action == smart_actions.index(MOVE_LEFT)) or\
-        #     (x < 10 and rl_action == smart_actions.index(MOVE_UP_LEFT)) or\
-        #     (x < 10 and rl_action == smart_actions.index(MOVE_DOWN_LEFT))):
-        #     return -1
-        # if ((x > 76 and rl_action == smart_actions.index(MOVE_RIGHT)) or\
-        #     (x > 76 and rl_action == smart_actions.index(MOVE_UP_RIGHT)) or\
-        #     (x > 76 and rl_action == smart_actions.index(MOVE_DOWN_RIGHT))):
-        #     return -1
-        # if ((y < 9 and rl_action == smart_actions.index(MOVE_UP)) or \
-        #     (y < 9 and rl_action == smart_actions.index(MOVE_UP_RIGHT)) or\
-        #     (y < 9 and rl_action == smart_actions.index(MOVE_UP_LEFT))):
-        #     return -1
-        # if ((y > 56 and rl_action == smart_actions.index(MOVE_DOWN)) or\
-        #     (y > 56 and rl_action == smart_actions.index(MOVE_DOWN_RIGHT)) or\
-        #     (y > 56 and rl_action == smart_actions.index(MOVE_DOWN_LEFT))):
-        #     return -1
+        if ((x < 10 and rl_action == smart_actions.index(MOVE_LEFT))):
+            return -1
+        if ((x > 76 and rl_action == smart_actions.index(MOVE_RIGHT)) ):
+            return -1
+        if ((y < 9 and rl_action == smart_actions.index(MOVE_UP))):
+            return -1
+        if ((y > 56 and rl_action == smart_actions.index(MOVE_DOWN))):
+            return -1
 
 
         # if (x < 15 and rl_action):
@@ -252,8 +244,16 @@ class SmartAgent(object):
         #     if (i > 25 or i < 6):
         #         reward -= .5 
 
-        if distance[unit_index] < 9:
-            return - 1
+
+
+
+        if distance[unit_index] < 10 :
+            return - 0.5
+
+        if distance[unit_index] < 24:
+            return 0.5
+
+        
 
         # if all_keep_dist == 2:
         #     return 2
@@ -335,7 +335,7 @@ class SmartAgent(object):
             selecting_closest.append(0)
 
         # combine all features horizontally
-        current_state = np.hstack((feature3, feature4, selecting_closest))
+        current_state = np.hstack((feature3, feature4, is_selected))
         print("is_selected = ", is_selected)
 
         return current_state, feature1, feature2, enemy, player, min_distance, is_selected, enemy_unit_count, player_unit_count
