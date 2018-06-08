@@ -81,14 +81,14 @@ class DeepQNetwork:
 
         # ------------------ build evaluate_net ------------------
         with tf.variable_scope('eval_net'):
-            e1 = tf.layers.dense(self.s, 25, tf.nn.relu, kernel_initializer=w_initializer,
+            e1 = tf.layers.dense(self.s, 28, tf.nn.relu, kernel_initializer=w_initializer,
                                  bias_initializer=b_initializer, name='e1')
             self.q_eval = tf.layers.dense(e1, self.n_actions, kernel_initializer=w_initializer,
                                           bias_initializer=b_initializer, name='q')
 
         # ------------------ build target_net ------------------
         with tf.variable_scope('target_net'):
-            t1 = tf.layers.dense(self.s_, 25, tf.nn.relu, kernel_initializer=w_initializer,
+            t1 = tf.layers.dense(self.s_, 28, tf.nn.relu, kernel_initializer=w_initializer,
                                  bias_initializer=b_initializer, name='t1')
             self.q_next = tf.layers.dense(t1, self.n_actions, kernel_initializer=w_initializer,
                                           bias_initializer=b_initializer, name='t2')
@@ -164,14 +164,7 @@ class DeepQNetwork:
 
 
 
-    def plot_reward(self, path, save):
-        if self.learn_step_counter % 10 == 0:
-            plt.plot(np.arange(len(self.reward)), self.reward)
-            plt.ylabel('Reward')
-            plt.xlabel('training steps')
-            if save:
-                plt.savefig(path + '/reward.png')
-            plt.show()
+
 
     def plot_cost(self, path, save):
         plt.plot(np.arange(len(self.cost_his)), self.cost_his)

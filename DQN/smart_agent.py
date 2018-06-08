@@ -60,10 +60,10 @@ smart_actions = [
     MOVE_DOWN,
     MOVE_LEFT,
     MOVE_RIGHT,
-    MOVE_UP_LEFT,
-    MOVE_UP_RIGHT,
-    MOVE_DOWN_LEFT,
-    MOVE_DOWN_RIGHT,
+    # MOVE_UP_LEFT,
+    # MOVE_UP_RIGHT,
+    # MOVE_DOWN_LEFT,
+    # MOVE_DOWN_RIGHT,
     ACTION_SELECT_UNIT_1,
     ACTION_SELECT_UNIT_2
 ]
@@ -104,7 +104,7 @@ class SmartAgent(object):
         self.player_hp_list = []
         self.enemy_hp = []
         self.enemy_hp_list = []
-
+        self.reward_list = []
         self.previous_enemy_hp = []
         self.previous_player_hp = []
 
@@ -142,6 +142,7 @@ class SmartAgent(object):
             self.player_hp_list.append(sum(player_hp))
             self.enemy_hp_list.append(sum(enemy_hp))
 
+
         # get the disabled actions and used it when choosing actions
         rl_action = self.dqn.choose_action(np.array(current_state))
         smart_action = smart_actions[rl_action]
@@ -154,6 +155,8 @@ class SmartAgent(object):
             self.dqn.store_transition(np.array(self.previous_state), self.previous_action, reward, np.array(current_state))
             if (self.steps > 50):
                 self.dqn.learn()
+            if (self.steps % 10 == 0):
+                self.reward_list.append(self.reward)
 
 
         self.previous_state = current_state
@@ -249,9 +252,9 @@ class SmartAgent(object):
         #     if (i > 25 or i < 6):
         #         reward -= .5 
 
-        if distance[unit_index] > 24 or distance[unit_index] < 7 :
+        if distance[unit_index] < 9:
             return - 1
-        
+
         # if all_keep_dist == 2:
         #     return 2
         # else:
@@ -558,4 +561,11 @@ class SmartAgent(object):
         self.seperat_steps = 0
         self.previous_player_hp = []
 
+    def plot_reward(self, path, save):
+        plt.plot(np.arange(len(self.reward_list)), self.reward_list)
+        plt.ylabel('Reward')
+        plt.xlabel('training steps')
+        if save:
+            plt.savefig(path + '/reward.png')
+        plt.show()
 

@@ -17,3 +17,6 @@ flags.DEFINE_string("map", "HappyKiting3V2", "Name of a map to use.")
 Run:
 `python agent.py`
 without any commandline parameters
+
+<a href="https://www.youtube.com/watch?v=Gx3hAEql9gA" target="_blank"><img src="http://img.youtube.com/vi/YOUTUBE_VIDEO_ID_HERE/0.jpg" 
+alt="DQN demo" width="240" height="180" border="10" /></a>
