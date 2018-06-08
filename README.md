@@ -18,5 +18,4 @@ Run:
 `python agent.py`
 without any commandline parameters
 
-<a href="https://www.youtube.com/watch?v=Gx3hAEql9gA" target="_blank"><img src="https://www.youtube.com/watch?v=Gx3hAEql9gA/0.jpg" 
-alt="DQN demo" width="240" height="180" border="10" /></a>
+[DQN Demo](https://img.youtube.com/vi/Gx3hAEql9gA/0.jpg)](https://www.youtube.com/watch?v=Gx3hAEql9gA)
