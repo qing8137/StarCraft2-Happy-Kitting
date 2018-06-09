@@ -26,7 +26,7 @@ Run:
 `python3 main.py` in `~\DQN`
 without any commandline parameters
 
-The overall performance is satisfying. The main problem we have so far is SELETECING units. There are a lot of misclickings happened in the games. If we take a close look at the demo, at 1:16, the agent is actrually trying to select the unit that was closest to the Zealot. However, it did misclicked the zealot, and thus it failed to select the Reaper for future instructions.
+The overall performance is satisfying. The main problem we have so far is SELETECING units. There are a lot of misclickings happened in the games. If we take a close look at the demo, at 1:16, the agent is actrually trying to select the unit that was closest to the Zealot. However, it misclicked the Zealot, and thus it failed to select the Reaper for future instructions.
 
 `click to watch the demo`
 
